@@ -39,20 +39,35 @@ echo ${REGION}
 ## Task 1. Create a new Cloud SQL instance
 In this task, you need to set up a new Cloud SQL instance in Google Cloud. Choose the right configurations and make sure to create the SQL instance in the Zone:ZONE and Region: REGION that will be suitable for hosting the WordPress database. Make sure you understand the requirements for the database to support the WordPress blog.
 ```
+gcloud sql instances create wordpress --tier=db-n1-standard-1 --activation-policy=ALWAYS --zone=$ZONE --database-version=MYSQL_5_7
+
+gcloud sql users set-password --host blogadmin --instance wordpress --password Password1*
 ```
 ## Task 2. Configure the new database
 Once you've created the Cloud SQL instance, your next step is to configure the database within it. Set up the necessary database parameters, ensuring it's prepared to receive the existing WordPress database data.
 ```
+export BLOG_VM_EXTERNAL_IP=<YOUR_BLOG_VM_EXTERNAL_IP>
+gcloud sql instances patch wordpress --authorized-networks $BLOG_VM_EXTERNAL_IP/32 --quiet
+gcloud compute ssh blog --zone=$ZONE
+export CLOUD_SQL_IP=$(gcloud sql instances describe wordpress --format 'value(ipAddresses.ipAddress)')
+mysql --host=$CLOUD_SQL_IP --user=root --password=Password1*
+CREATE DATABASE wordpress; CREATE USER 'blogadmin'@'%' IDENTIFIED BY 'Password1*'; GRANT ALL PRIVILEGES ON wordpress.* TO 'blogadmin'@'%'; FLUSH PRIVILEGES;
+exit
 ```
 
 ## Task 3. Perform a database dump and import the data
 Your task here is to perform a dump of the existing wordpress MySQL database and then import this data into your newly created Cloud SQL database. This step is crucial in migrating the database effectively.
 ```
+sudo mysqldump -u root -pPassword1* wordpress > wordpress_db_backup.sql
+
+mysql --host=$CLOUD_SQL_IP --user=root -pPassword1* --verbose wordpress < wordpress_db_backup.sql
 ```
 
 ## Task 4. Reconfigure the WordPress installation
 Now that the database has been migrated to Cloud SQL, you need to reconfigure the WordPress software to use this new database. This involves editing the wp-config.php file in the WordPress directory to point to the Cloud SQL database, moving away from the local MySQL database.
 ```
+sudo service apache2 restart
+sudo sed -i "s/localhost/$CLOUD_SQL_IP/g" /var/www/html/wordpress/wp-config.php
 ```
 
 ## Task 5. Validate and troubleshoot
