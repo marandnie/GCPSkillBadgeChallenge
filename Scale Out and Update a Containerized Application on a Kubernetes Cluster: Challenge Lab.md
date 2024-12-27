@@ -41,7 +41,7 @@ echo ${REGION}
 The updated sample application, including the Dockerfile and the application context files, are contained in an archive called echo-web-v2.tar.gz. The archive has been copied to a Cloud Storage bucket in your lab project called bucket name. V2 of the application adds a version number to the output of the application. In this task, you will download the archive, build the Docker image, and tag it with the v2 tag.
 
 ```
-kubectl create deployment echo-web --image=gs://qwiklabs-gcp-00-97c2f1423a49:v2
+kubectl create deployment echo-web --image=gs://$[PROJECT_ID]:v2
 ```
 ```
 kubectl expose deployment echo-web --type=LoadBalancer --port 80 --target-port 8000
