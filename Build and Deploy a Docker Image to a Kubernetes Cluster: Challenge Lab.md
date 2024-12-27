@@ -15,8 +15,15 @@ gcloud config list project
 export ZONE=zone
 echo ${ZONE}
 
+export REGION="${ZONE%-*}"
 REGION="${ZONE%-*}"
 echo ${REGION}
+
+export PROJECT_ID=$(gcloud info --format='value(config.project)')
+echo ${PROJECT_ID}
+
+export CLUSTER_NAME=echo-cluster
+echo ${CLUSTER_NAME}
 
 ```
 
@@ -35,34 +42,30 @@ The sample application, including the Dockerfile and the application context fil
 
 You must deploy this with a tag called v1.
 
-```
-kubectl create deployment echo-web --image=gs://$[PROJECT_ID]/echo-web.tar.gz:v1
-```
-
 ## Task 3. Push the image to the Google Container Registry
 Your organization has decided that it will always use the gcr.io Container Registry hostname for all projects. The sample application is a simple web application that reports some data describing the configuration of the system where the application is running. It is configured to use TCP port 8000 by default.
 
 ```
-export PROJECT_ID=$(gcloud info --format='value(config.project)')
-gsutil cp gs://${PROJECT_ID}/echo-web.tar.gz .
+gsutil cp gs://$PROJECT_ID/echo-web.tar.gz .
 tar -xvzf echo-web.tar.gz
 ```
 ```
 docker build -t echo-app:v1 .
-docker tag echo-app:v1 gcr.io/${PROJECT_ID}/echo-app:v1
-docker push gcr.io/${PROJECT_ID}/echo-app:v1
+docker tag echo-app:v1 gcr.io/$PROJECT_ID/echo-app:v1
+docker push gcr.io/$PROJECT_ID/echo-app:v1
 ```
 
 ## Task 4. Deploy the application to the Kubernetes cluster
 - Even though the application is configured to respond to HTTP requests on port 8000, you must configure the service to respond to normal web requests on port 80. When configuring the cluster for your sample application, call your deployment echo-web.
 ```
 gcloud container clusters get-credentials echo-cluster --zone=$ZONE
-kubectl run echo-app --image=gcr.io/${PROJECT_ID}/echo-app:v1 --port 8000
+kubectl run echo-app --image=gcr.io/$PROJECT_ID/echo-app:v1 --port 8000
 ```
 ```
-kubectl expose deployment echo-app --name echo-web \
-   --type LoadBalancer --port 80 --target-port 8000
-   ```
+kubectl expose deployment echo-web --name echo-web --type=LoadBalancer --port=80 --target-port=8000
+kubectl expose deployment echo-app --name echo-web --type LoadBalancer --port 80 --target-port 8000
+
+```
 ```
 kubectl get service echo-web
 ```
