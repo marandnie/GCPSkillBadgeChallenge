@@ -53,12 +53,17 @@ tar -xvzf echo-web.tar.gz
 docker build -t echo-app:v1 .
 docker tag echo-app:v1 gcr.io/$PROJECT_ID/echo-app:v1
 docker push gcr.io/$PROJECT_ID/echo-app:v1
+
+kubectl create deployment echo-app --image=gcr.io/${PROJECT_ID}/echo-app:v1
+
+
 ```
 
 ## Task 4. Deploy the application to the Kubernetes cluster
 - Even though the application is configured to respond to HTTP requests on port 8000, you must configure the service to respond to normal web requests on port 80. When configuring the cluster for your sample application, call your deployment echo-web.
 ```
 gcloud container clusters get-credentials echo-cluster --zone=$ZONE
+
 kubectl run echo-app --image=gcr.io/$PROJECT_ID/echo-app:v1 --port 8000
 ```
 ```
